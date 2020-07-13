@@ -26,6 +26,7 @@ class Axe {
     uint16_t stepDuration;
     uint16_t maxStepPerBatch;
     bool sensorTouched = false;
+    bool clockWise;
     
     void (*doStep)(float);
     bool (*testEndSensor)(void);
@@ -33,11 +34,12 @@ class Axe {
     void (*debug)(uint16_t, uint16_t);
     
     public :
-    Axe(uint32_t totalStep, bool isX, uint16_t stepDelay, float startAt)
+    Axe(uint32_t totalStep, bool isX, uint16_t stepDelay, float startAt, bool clockWise)
     :   alpha(0.f),
         isX(isX),
         stepDelay(stepDelay),
-        stepDuration(stepDelay + 1)
+        stepDuration(stepDelay + 1),
+        clockWise(clockWise)
     {
         this->k = 0;
         this->kMax = 4000 * PI;
@@ -56,7 +58,8 @@ class Axe {
     };
     
     bool run() {
-        float speed = sin(k * alphaInc + offset);
+        float angle = k * alphaInc + offset;
+        float speed = sin(angle) * (clockWise ? -1 : 1);
         bool direction = speed > 0 ;
         int step = abs((int)round(speed * maxStepPerBatch));
         if(setDirection)(*setDirection)(direction);

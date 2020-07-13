@@ -41,7 +41,7 @@ enum PORT  { _14210, _14220, _14230, _14240 };
 enum ROBOT { DRAWER, ERASER };
 enum AXES  { X, Y };
 
-static const PORT  port = _14240;
+static const PORT  port = _14220;
 static const ROBOT role = port == _14210 || port == _14220 ? DRAWER : ERASER;
 static const AXES  _axe = port == _14210 || port == _14230 ? X : Y;
 static const uint8_t ID = (role << 1) | _axe;
@@ -50,7 +50,7 @@ static const uint32_t      step = _axe == X ? X_RAIL_IN_STEP : Y_RAIL_IN_STEP;
 static const uint16_t stepDelay = _axe == X ? 66 : 66; // 27 : 50; // 106
 static const float      startAt = role == DRAWER ? 0.25 : 0.125;
 
-Axe axe(step, _axe == X, stepDelay, startAt);
+Axe axe(step, _axe == X, stepDelay, startAt, role == DRAWER);
 uint32_t lastMessageAt;
 EventManager Manager;
 char * buffer;
@@ -62,7 +62,7 @@ bool testEndSensor(){
 
 void SetDirection(uint8_t Direction){
     if(_axe == Y) Direction = !Direction;
-    if(role == DRAWER && Manager.myState == Manager.RUN) Direction = !Direction;
+    //if(role == DRAWER && Manager.myState == Manager.RUN) Direction = !Direction;
     digitalWrite(DIR_PIN, Direction );
 }
 
