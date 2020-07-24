@@ -41,7 +41,7 @@ enum PORT  { _14210, _14220, _14230, _14240 };
 enum ROBOT { DRAWER, ERASER };
 enum AXES  { X, Y };
 
-static const PORT  port = _14220;
+static const PORT  port = _14240;
 static const ROBOT role = port == _14210 || port == _14220 ? DRAWER : ERASER;
 static const AXES  _axe = port == _14210 || port == _14230 ? X : Y;
 static const uint8_t ID = (role << 1) | _axe;
@@ -118,7 +118,7 @@ void setup(){
     delay(1000 + ID * 1000);
     Serial.begin(9600);
     while(!Serial){}
-    
+    //Serial.println(axe.startAt);
     axe.setDoStep(DoStep);
     axe.setSetDirection(SetDirection);
     axe.setTestEndSensor(testEndSensor);
