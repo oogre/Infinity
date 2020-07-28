@@ -16,11 +16,12 @@ class Axe {
     bool isX;
     uint32_t k;
     uint32_t kMax;
-    float alpha;
+    uint32_t padding;
+    
     float alphaInc;
-    float alphaMax;
     float offset = 0;
-    long position = -1;
+    
+    long position = 0;
     uint16_t startAt;
     uint16_t stepDelay;
     uint16_t stepDuration;
@@ -35,77 +36,84 @@ class Axe {
     
     public :
     Axe(uint32_t totalStep, bool isX, uint16_t stepDelay, float startAt, bool clockWise)
-    :   alpha(0.f),
-        isX(isX),
+    :   isX(isX),
         stepDelay(stepDelay),
         stepDuration(stepDelay + 1),
         clockWise(clockWise)
     {
         this->k = 0;
-        this->kMax = 4000 * PI;
-        this->alphaMax = TWO_PI;
-        float resolution = 1.0f/4000;
-        this->maxStepPerBatch = totalStep * resolution;
-        this->alphaInc = 2.f * resolution;
-        
+        this->kMax = 4000;
+        this->alphaInc = TWO_PI/this->kMax;
+        this->maxStepPerBatch = totalStep / this->kMax;
         if(!isX){
             this->alphaInc *= 2;
-            this->alphaMax *= 2;
             this->offset = HALF_PI;
             this->position = -1 * ( totalStep/4 );
         }
-        this->startAt = (int)(startAt * this->alphaMax / this->alphaInc);
+        this->padding = fmod(startAt + (clockWise ? 0.5 : 0 ) + 1.0f, 1.0f) * this->kMax;
     };
     
     bool run() {
         float angle = k * alphaInc + offset;
-        float speed = sin(angle) * (clockWise ? -1 : 1);
+        float speed = (clockWise ? -1 : 1) * sin(angle);
+        
         bool direction = speed > 0 ;
         int step = abs((int)round(speed * maxStepPerBatch));
-        if(setDirection)(*setDirection)(direction);
-        
-        if (k > kMax - 1) {
+        if (k >= kMax - 1) {
+            direction = position < 0;
             step = abs((int)position);
         }
+        
+        if(setDirection)(*setDirection)(direction);
         for(int i = 0 ; i < step ; i ++){
             if(doStep)(*doStep)(stepDelay);
             position += direction ? 1 : -1;
         }
+        
         uint32_t wait = (maxStepPerBatch - step) * stepDuration;
         if(wait > 16383) {
             delay(wait * 0.001);
         }else{
             delayMicroseconds(wait);
         }
-        //alpha += alphaInc;
+        
         k++;
-        if(k > kMax){
-            //alpha = 0;
+        if(k >= kMax){
             k = 0 ;
+        }
+        if(k == padding){
             return true;
         }
         return false;
     }
     // USED TO OFFSET THE START POINT
     bool virtualRun(){
-        float speed = sin(alpha+offset);
-        /*
-         position -= (int)round(speed * maxStepPerBatch);
-        */
-        /**/
+        if(padding <= 0){
+            padding = k;
+            return true;
+        }
+        
+        float angle = k * alphaInc + offset;
+        float speed = sin(angle);
+        
         bool direction = speed > 0 ;
         int step = abs((int)round(speed * maxStepPerBatch));
+        if (k >= kMax - 1) {
+            direction = position < 0;
+            step = abs((int)position);
+        }
+        
         for(int i = 0 ; i < step ; i ++){
             position += direction ? -1 : 1;
         }
-        /**/
-        alpha += alphaInc;
-        if(alpha >= alphaMax){
-            alpha = 0 ;
+        k++;
+        if(k >= kMax){
+            k = 0 ;
         }
-        if(startAt-- <= 0) {
-            offset += alpha;
-            alpha = 0;
+        
+        padding--;
+        if(padding <= 0){
+            padding = k;
             return true;
         }
         return false;
